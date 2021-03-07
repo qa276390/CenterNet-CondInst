@@ -1,3 +1,4 @@
+cocoapi/*
 legacy/*
 .DS_Store
 debug/*

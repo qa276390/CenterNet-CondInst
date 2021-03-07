@@ -3,9 +3,13 @@ from __future__ import division
 from __future__ import print_function
 
 import torch
-from torch.utils.data.dataloader import _use_shared_memory,numpy_type_map,int_classes,string_classes
+#from torch.utils.data.dataloader import numpy_type_map,int_classes,string_classes
+from torch._six import int_classes, string_classes
+from torch.utils.data import _utils
 import collections
 import re
+_use_shared_memory = False
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):

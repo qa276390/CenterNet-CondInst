@@ -25,9 +25,9 @@ class opts(object):
     self.parser.add_argument('--demo', default='', 
                              help='path to image/ image folders/ video. '
                                   'or "webcam"')
-    self.parser.add_argument('--load_model', default='../exp/ctseg/default/model_last.pth',
+    self.parser.add_argument('--load_model', default='',#../exp/ctseg/default/model_last.pth',
                              help='path to pretrained model')
-    self.parser.add_argument('--resume', action='store_true',default=True,
+    self.parser.add_argument('--resume', action='store_true',
                              help='resume an experiment. '
                                   'Reloaded the optimizer parameter and '
                                   'set load_model to model_last.pth '
@@ -282,7 +282,9 @@ class opts(object):
     opt.debug_dir = os.path.join(opt.save_dir, 'debug')
     print('The output will be saved to ', opt.save_dir)
     
+    print('resume', opt.resume)
     if opt.resume and opt.load_model == '':
+      print('in???????????????????/')
       model_path = opt.save_dir[:-4] if opt.save_dir.endswith('TEST') \
                   else opt.save_dir
       opt.load_model = os.path.join(model_path, 'model_last.pth')
