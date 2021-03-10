@@ -442,6 +442,14 @@ class DLASeg(nn.Module):
         self.ida_up = IDAUp(out_channel, channels[self.first_level:self.last_level], 
                             [2 ** i for i in range(self.last_level - self.first_level)])
         
+        ###########################################ctseg##############################################
+        #    opt.heads = {'hm': opt.num_classes,
+        #           'wh': 2 if not opt.cat_spec_wh else 2 * opt.num_classes,
+        #           'conv_weight': 2*opt.seg_feat_channel**2 + 5*opt.seg_feat_channel + 1,
+        #           'seg_feat': opt.seg_feat_channel
+        #           }
+        ##############################################################################################
+
         self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
@@ -496,7 +504,7 @@ class DLASeg(nn.Module):
         return [z]
     
 
-def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
+def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4): # Model Starts From Here #vtsai01
   model = DLASeg('dla{}'.format(num_layers), heads,
                  pretrained=True,
                  down_ratio=down_ratio,

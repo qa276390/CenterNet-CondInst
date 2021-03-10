@@ -193,6 +193,13 @@ class opts(object):
     self.parser.add_argument('--seg_weight', default= 3., type=float,
                              help='')
 
+    # mtseg
+    self.parser.add_argument('--local_shape_size', default=32,type=int,
+                             help='.')
+    self.parser.add_argument('--smap_class_specify', action='store_true', 
+                             help='')
+
+
     # exdet
     self.parser.add_argument('--agnostic_ex', action='store_true',
                              help='use category agnostic extreme points.')
@@ -332,6 +339,14 @@ class opts(object):
                    'wh': 2 if not opt.cat_spec_wh else 2 * opt.num_classes,
                    'conv_weight': 2*opt.seg_feat_channel**2 + 5*opt.seg_feat_channel + 1,
                    'seg_feat': opt.seg_feat_channel
+                   }
+      if opt.reg_offset:
+        opt.heads.update({'reg': 2})
+    elif opt.task == 'mtseg':
+      opt.heads = {'hm': opt.num_classes,
+                   'wh': 2 if not opt.cat_spec_wh else 2 * opt.num_classes,
+                   'local_shape': opt.local_shape_size**2 ,
+                   'saliency_map': 1 if not opt.smap_class_specify else opt.num_classes,
                    }
       if opt.reg_offset:
         opt.heads.update({'reg': 2})

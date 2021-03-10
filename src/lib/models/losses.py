@@ -157,6 +157,12 @@ def dice_loss(input, target):
     return 1 - ((2. * intersection + smooth) /((iflat*iflat).sum() + (tflat*tflat).sum() + smooth))
 
 
+class MaskBCELoss(nn.Module):
+  def __init__(self):
+    #######################
+    ## to be implemented ##
+    #######################
+
 class DiceLoss(nn.Module):
     def __init__(self,feat_channel):
         super(DiceLoss, self).__init__()
