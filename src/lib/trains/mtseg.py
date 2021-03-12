@@ -74,9 +74,8 @@ class MtsegLoss(torch.nn.Module):
             #                                  head to mask                                 #
             #                                                                               #
             #################################################################################
-            output['seg_mask'] = self.mask_gen(output['local_shape'], output['saliency_map'], ...)
 
-            mask_loss+=self.crit_mask(output['seg_mask'],
+            mask_loss+=self.crit_mask(output['local_shape'], output['saliency_map'], output['wh'],
                                       batch['reg_mask'],batch['ind'],batch['instance_mask'])
 
         loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
