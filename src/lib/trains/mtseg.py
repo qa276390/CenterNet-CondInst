@@ -13,7 +13,7 @@ from utils.debugger import Debugger
 from utils.post_process import ctdet_post_process
 from utils.oracle_utils import gen_oracle_map
 from .base_trainer import BaseTrainer
-from models.mask_gen import Mtseg_Head2Mask
+
 
 
 class MtsegLoss(torch.nn.Module):
@@ -26,7 +26,6 @@ class MtsegLoss(torch.nn.Module):
             NormRegL1Loss() if opt.norm_wh else \
                 RegWeightedL1Loss() if opt.cat_spec_wh else self.crit_reg
         self.crit_mask = MaskBCELoss()
-        self.mask_gen = Mtseg_Head2Mask()
         self.opt = opt
 
     def forward(self, outputs, batch):
@@ -36,6 +35,9 @@ class MtsegLoss(torch.nn.Module):
             output = outputs[s]
             if not opt.mse_loss:
                 output['hm'] = _sigmoid(output['hm'])
+            output['saliency_map'] = _sigmoid(output['saliency_map'])
+            output['local_shape'] = _sigmoid(output['local_shape'])
+
 
             if opt.eval_oracle_hm:
                 output['hm'] = batch['hm']

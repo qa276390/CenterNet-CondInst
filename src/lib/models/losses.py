@@ -13,38 +13,35 @@ import torch.nn as nn
 from .utils import _tranpose_and_gather_feat
 import torch.nn.functional as F
 
-
-
-def extent_shape(local_shape):
-
-  return 
-
-def crop_from_map(saliency_map, pred_wh, ind):
+def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   """
-    saliency_map (batch, h, w)
+    local_shape (batch, max_objects, dim) 
+    saliency_map (batch, 1, h, w)
     pred_wh (batch, max_objects, 2)
     ind (batch, max_objects)
   """
   max_objects = ind.size(1)
   batch_size = ind.size(0)
-  W = saliency_map.size(2)
-  saliency_map_expand = saliency_map.unsqueeze(3).expand(saliency_map(0), max_objects, saliency_map(1), saliency_map(2)) 
-  # saliency_map_expand (batch, max_objects, h, w )
-  masking_to_crop = torch.zeros_like(saliency_map_expand)
-  for b in batch_size:
-    for o in max_objects:
+  W = saliency_map.size(3)
+  S = int(local_shape.size(2)**0.5)
+  reshape_local_shape = torch.reshape(local_shape, (local_shape.size(0), local_shape.size(1), S, S)) # (batch, max_objects, S, S) 
+  saliency_map_expand = saliency_map.unsqueeze(1).expand(saliency_map.size(0), max_objects, saliency_map.size(1), saliency_map.size(2), saliency_map.size(3)) 
+  # saliency_map_expand (batch, max_objects, 1, h, w )
+  masking_with_local_shape = torch.zeros_like(saliency_map_expand)
+  smap_dim = 0
+  for b in range(batch_size):
+    for o in range(max_objects):
       idx = ind[b, o]
-      hfh = pred_wh[b, o, 0]
-      hfw = pred_wh[b, o, 1]
+      hfh = pred_wh[b, o, 0] # h
+      hfw = pred_wh[b, o, 1] # w
       ct_0 = idx % W
       ct_1 = idx / W
-      masking_to_crop[b, o, ct_1-hfh:ct_1+hfh , ct_0-hfw:ct_0+hfw] = 1
-  cropped_map = saliency_map_expand * masking_to_crop
-  return cropped_map # (batch, max_objects, h, w )
+      resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0), size=[int(pred_wh[b, o, 0]),  int(pred_wh[b, o, 1])]) # some issues here 3/13
+      masking_with_local_shape[b, o, :, ct_1-hfh:ct_1+hfh , ct_0-hfw:ct_0+hfw] = resized_shape * 1
 
+  inst_segs = saliency_map_expand * masking_with_local_shape
+  return inst_segs # (batch, max_objects, h, w )
 
-def Hadamard_Product(local_shape, saliency_map):
-  return   
 
 def _slow_neg_loss(pred, gt):
   '''focal loss from CornerNet'''
@@ -193,7 +190,7 @@ class MaskBCELoss(nn.Module):
   '''Binary CrossEntropy Loss for instance Segmentation Mask an output tensor
     Arguments:
       local_shape (batch x dim x h x w)
-      saliency_map (batch x h x w)
+      saliency_map (batch, 1, h, ,w)
       wh (batch x 2 x h x w)
       mask (batch x max_objects)
       ind (batch x max_objects)
@@ -201,16 +198,18 @@ class MaskBCELoss(nn.Module):
   '''
   def __init__(self):
     super(MaskBCELoss, self).__init__()
+    self.bceloss = nn.BCELoss()
   
   def forward(self, local_shape, saliency_map, wh, mask, ind, target):
+    #print('saliency_map', saliency_map.size())
+    #print('local_shape', local_shape.size())
+    #print('wh', wh.size())
     pred_local_shape = _tranpose_and_gather_feat(local_shape, ind) # (batch, max_objects, dim) with "ind" order
     pred_wh = _tranpose_and_gather_feat(wh, ind)
-    cropped_smap = crop_from_map(saliency_map, pred_wh, ind)
-    extended_local_shape = extend_local_shape(pred_local_shape)
-    inst_segs = cropped_smap * extended_local_shape
-    #mask = mask.unsqueeze(2).expand_as(pred).float()
-
-    return 
+    inst_segs = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, ind) #  (batch, max_objects, h, w )
+    mask = mask.unsqueeze(2).expand_as(inst_segs).float()
+    losses = self.bceloss(inst_segs*mask, target*mask)
+    return losses
 
 
 class DiceLoss(nn.Module):

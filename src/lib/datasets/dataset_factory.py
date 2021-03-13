@@ -27,6 +27,7 @@ _sample_factory = {
   'ddd': DddDataset,
   'multi_pose': MultiPoseDataset,
   'ctseg':CTSegDataset,
+  'mtseg':CTSegDataset,
 }
 
 
