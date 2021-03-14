@@ -32,11 +32,15 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   for b in range(batch_size):
     for o in range(max_objects):
       idx = ind[b, o]
-      hfh = pred_wh[b, o, 0] # h
-      hfw = pred_wh[b, o, 1] # w
+      hfh = int(pred_wh[b, o, 0] / 2) # h/2
+      hfw = int(pred_wh[b, o, 1] / 2) # w/2
       ct_0 = idx % W
       ct_1 = idx / W
-      resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0), size=[int(pred_wh[b, o, 0]),  int(pred_wh[b, o, 1])]) # some issues here 3/13
+      if int(pred_wh[b, o, 0]) <= 0 or int(pred_wh[b, o, 1]) <= 0:
+        resized_shape = 0
+      else:
+        resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0), size=int(pred_wh[b, o, 0])) # some issues here 3/13
+        resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0), size=tuple(int(pred_wh[b, o, 0]), int(pred_wh[b, o, 1]))) # some issues here 3/13
       masking_with_local_shape[b, o, :, ct_1-hfh:ct_1+hfh , ct_0-hfw:ct_0+hfw] = resized_shape * 1
 
   inst_segs = saliency_map_expand * masking_with_local_shape
@@ -191,23 +195,25 @@ class MaskBCELoss(nn.Module):
     Arguments:
       local_shape (batch x dim x h x w)
       saliency_map (batch, 1, h, ,w)
-      wh (batch x 2 x h x w)
-      mask (batch x max_objects)
-      ind (batch x max_objects)
-      target (batch x max_objects x dim)
+      wh (batch, 2, h, w)
+      mask (batch, max_objects)
+      ind (batch, max_objects)
+      target (batch, max_objects, h, w)
   '''
   def __init__(self):
     super(MaskBCELoss, self).__init__()
     self.bceloss = nn.BCELoss()
   
   def forward(self, local_shape, saliency_map, wh, mask, ind, target):
-    #print('saliency_map', saliency_map.size())
-    #print('local_shape', local_shape.size())
-    #print('wh', wh.size())
+    n_obj = target.size(1)
     pred_local_shape = _tranpose_and_gather_feat(local_shape, ind) # (batch, max_objects, dim) with "ind" order
     pred_wh = _tranpose_and_gather_feat(wh, ind)
-    inst_segs = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, ind) #  (batch, max_objects, h, w )
-    mask = mask.unsqueeze(2).expand_as(inst_segs).float()
+    inst_segs = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, ind) #  (batch, max_objects, 1, h, w )
+    mask = mask[:, :n_obj].unsqueeze(2).unsqueeze(3).expand_as(target).float()
+    inst_segs = inst_segs[:, :n_obj].squeeze(2)
+    #print('inst_segs', inst_segs.size())
+    #print('target', target.size())
+
     losses = self.bceloss(inst_segs*mask, target*mask)
     return losses
 
