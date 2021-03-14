@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 from .utils import _tranpose_and_gather_feat
 import torch.nn.functional as F
+import math
 
 def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   """
@@ -32,16 +33,21 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   for b in range(batch_size):
     for o in range(max_objects):
       idx = ind[b, o]
-      hfh = int(pred_wh[b, o, 0] / 2) # h/2
-      hfw = int(pred_wh[b, o, 1] / 2) # w/2
+      boxh, boxw =int(pred_wh[b, o, 0]), int(pred_wh[b, o, 1])
+      hfh_lo, hfh_up = int(boxh / 2), math.ceil(boxh / 2) # h/2
+      hfw_lo, hfw_up = int(boxw / 2), math.ceil(boxw / 2) # w/2
       ct_0 = idx % W
       ct_1 = idx / W
-      if int(pred_wh[b, o, 0]) <= 0 or int(pred_wh[b, o, 1]) <= 0:
+      print('boxh, boxw', boxh, boxw)
+      print('hfw_lo', 'hfw_up', hfw_lo, hfw_up)
+      if boxh <= 0 or boxw <= 0:
         resized_shape = 0
       else:
-        resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0), size=int(pred_wh[b, o, 0])) # some issues here 3/13
-        resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0), size=tuple(int(pred_wh[b, o, 0]), int(pred_wh[b, o, 1]))) # some issues here 3/13
-      masking_with_local_shape[b, o, :, ct_1-hfh:ct_1+hfh , ct_0-hfw:ct_0+hfw] = resized_shape * 1
+        resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0).unsqueeze(0), size=tuple((boxh, boxw)))
+        resized_shape = resized_shape.squeeze(0)
+        print('resized_shape', resized_shape.size())
+        print('in shape', masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up].size())
+      masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = resized_shape * 1 # what if ct_0 == 0
 
   inst_segs = saliency_map_expand * masking_with_local_shape
   return inst_segs # (batch, max_objects, h, w )
@@ -202,10 +208,11 @@ class MaskBCELoss(nn.Module):
   '''
   def __init__(self):
     super(MaskBCELoss, self).__init__()
-    self.bceloss = nn.BCELoss()
+    self.bceloss = nn.BCELoss(reduction='sum')
   
   def forward(self, local_shape, saliency_map, wh, mask, ind, target):
     n_obj = target.size(1)
+    b_size = target.size(0)
     pred_local_shape = _tranpose_and_gather_feat(local_shape, ind) # (batch, max_objects, dim) with "ind" order
     pred_wh = _tranpose_and_gather_feat(wh, ind)
     inst_segs = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, ind) #  (batch, max_objects, 1, h, w )
@@ -214,7 +221,7 @@ class MaskBCELoss(nn.Module):
     #print('inst_segs', inst_segs.size())
     #print('target', target.size())
 
-    losses = self.bceloss(inst_segs*mask, target*mask)
+    losses = self.bceloss(inst_segs*mask, target*mask)/(n_obj * b_size + 1e-4)
     return losses
 
 
