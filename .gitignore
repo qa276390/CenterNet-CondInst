@@ -1,3 +1,4 @@
+tmp/*
 cocoapi/*
 legacy/*
 .DS_Store

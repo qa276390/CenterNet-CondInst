@@ -49,7 +49,7 @@ class CTSegDataset(data.Dataset):
 
         flipped = False
         if self.split == 'train':
-            if not self.opt.not_rand_crop:
+            if False:#not self.opt.not_rand_crop:
                 s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
                 w_border = self._get_border(128, img.shape[1])
                 h_border = self._get_border(128, img.shape[0])
@@ -111,10 +111,30 @@ class CTSegDataset(data.Dataset):
             bbox[2:] = affine_transform(bbox[2:], trans_output)
             bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
             bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
+            
+            
+           
+            #instance_mask_ori = instance_mask
             instance_mask= cv2.warpAffine(instance_mask, trans_output,
                                  (output_w, output_h),
                                  flags=cv2.INTER_LINEAR)
+            """
+            print(f'======================k:{k}==========================')
+            print(img_path)
+            print('trans_output', trans_output)
+            print('w, h', output_h, output_w)
+            print('c, s', c, s)
+            print('instance_mask_ori', np.shape(instance_mask_ori))
+            import matplotlib.pyplot as plt
+            plt.imshow(instance_mask_ori)
+            plt.savefig(f'../tmp/mask_raw_{k}.png')
+            plt.imshow(instance_mask)
+            plt.savefig(f'../tmp/mask_affine_{k}.png')
             instance_mask = instance_mask.astype(np.float32)
+            import sys
+            if(k > 5):
+                sys.exit(0)
+            """
 
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
             if h > 0 and w > 0:

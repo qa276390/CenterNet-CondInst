@@ -24,31 +24,44 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   max_objects = ind.size(1)
   batch_size = ind.size(0)
   W = saliency_map.size(3)
+  H = saliency_map.size(2)
   S = int(local_shape.size(2)**0.5)
   reshape_local_shape = torch.reshape(local_shape, (local_shape.size(0), local_shape.size(1), S, S)) # (batch, max_objects, S, S) 
   saliency_map_expand = saliency_map.unsqueeze(1).expand(saliency_map.size(0), max_objects, saliency_map.size(1), saliency_map.size(2), saliency_map.size(3)) 
   # saliency_map_expand (batch, max_objects, 1, h, w )
   masking_with_local_shape = torch.zeros_like(saliency_map_expand)
-  smap_dim = 0
   for b in range(batch_size):
     for o in range(max_objects):
       idx = ind[b, o]
+      ct_0 = int(idx) % W # W
+      ct_1 = math.floor(int(idx) / W) # H
+
       boxh, boxw =int(pred_wh[b, o, 0]), int(pred_wh[b, o, 1])
-      hfh_lo, hfh_up = int(boxh / 2), math.ceil(boxh / 2) # h/2
-      hfw_lo, hfw_up = int(boxw / 2), math.ceil(boxw / 2) # w/2
-      ct_0 = idx % W
-      ct_1 = idx / W
-      print('boxh, boxw', boxh, boxw)
-      print('hfw_lo', 'hfw_up', hfw_lo, hfw_up)
+      hfh_lo_, hfh_up_ = int(boxh / 2), math.ceil(boxh / 2) # h/2
+      hfw_lo_, hfw_up_ = int(boxw / 2), math.ceil(boxw / 2) # w/2
+      hfw_lo, hfw_up = hfw_lo_ if ct_0 - hfw_lo_ >= 0 else ct_0,  hfw_up_ if ct_0 + hfw_up_ <= W else W - ct_0
+      hfh_lo, hfh_up = hfh_lo_ if ct_1 - hfh_lo_ >= 0 else ct_1,  hfh_up_ if ct_1 + hfh_up_ <= H else H - ct_1
+
+     
       if boxh <= 0 or boxw <= 0:
         resized_shape = 0
       else:
         resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0).unsqueeze(0), size=tuple((boxh, boxw)))
-        resized_shape = resized_shape.squeeze(0)
+        resized_shape = resized_shape.squeeze(0)[:, hfh_lo_-hfh_lo:hfh_up+hfh_lo_, hfw_lo_-hfw_lo:hfw_up+hfw_lo_]
+        
+       
+      try:
+        masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = resized_shape * 1 # what if ct_0 == 0
+      except:
+        print('error!')
+        print('boxh, boxw', boxh, boxw)
+        print('hfw_lo_', 'hfw_up_', hfw_lo_, hfw_up_)
+        print('hfw_lo', 'hfw_up', hfw_lo, hfw_up)
+        print('ct_0', 'ct_1', ct_0, ct_1)
         print('resized_shape', resized_shape.size())
         print('in shape', masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up].size())
-      masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = resized_shape * 1 # what if ct_0 == 0
-
+        import sys
+        sys.exit(1)
   inst_segs = saliency_map_expand * masking_with_local_shape
   return inst_segs # (batch, max_objects, h, w )
 
@@ -208,7 +221,7 @@ class MaskBCELoss(nn.Module):
   '''
   def __init__(self):
     super(MaskBCELoss, self).__init__()
-    self.bceloss = nn.BCELoss(reduction='sum')
+    self.bceloss = nn.BCELoss(reduction='mean')
   
   def forward(self, local_shape, saliency_map, wh, mask, ind, target):
     n_obj = target.size(1)
@@ -221,7 +234,7 @@ class MaskBCELoss(nn.Module):
     #print('inst_segs', inst_segs.size())
     #print('target', target.size())
 
-    losses = self.bceloss(inst_segs*mask, target*mask)/(n_obj * b_size + 1e-4)
+    losses = self.bceloss(inst_segs*mask, target*mask)#/(n_obj * b_size + 1e-4)
     return losses
 
 
