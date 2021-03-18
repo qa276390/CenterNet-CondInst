@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from .utils import _gather_feat, _tranpose_and_gather_feat
 import torch.nn.functional as F
+from .mask_gen import multiply_local_shape_and_map
 
 
 def _nms(heat, kernel=3):
@@ -559,6 +560,44 @@ def ctseg_decode(heat, wh, seg_feat ,conv_weight ,reg=None, cat_spec_wh=False, K
         mask[i] = feat
 
     return detections,mask
+
+def mtseg_decode(heat, wh, saliency_map ,local_shape ,reg=None, cat_spec_wh=False, K=100):
+    batch, cat, height, width = heat.size()
+
+    # heat = torch.sigmoid(heat)
+    # perform nms on heatmaps
+    heat = _nms(heat)
+
+    scores, inds, clses, ys, xs = _topk(heat, K=K)
+    if reg is not None:
+        reg = _tranpose_and_gather_feat(reg, inds)
+        reg = reg.view(batch, K, 2)
+        xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
+        ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
+    else:
+        xs = xs.view(batch, K, 1) + 0.5
+        ys = ys.view(batch, K, 1) + 0.5
+    wh = _tranpose_and_gather_feat(wh, inds)
+    if cat_spec_wh:
+        wh = wh.view(batch, K, cat, 2)
+        clses_ind = clses.view(batch, K, 1, 1).expand(batch, K, 1, 2).long()
+        wh = wh.gather(2, clses_ind).view(batch, K, 2)
+    else:
+        wh = wh.view(batch, K, 2)
+    clses = clses.view(batch, K, 1).float()
+    scores = scores.view(batch, K, 1)
+    bboxes = torch.cat([xs - wh[..., 0:1] / 2,
+                        ys - wh[..., 1:2] / 2,
+                        xs + wh[..., 0:1] / 2,
+                        ys + wh[..., 1:2] / 2], dim=2)
+
+    detections = torch.cat([bboxes, scores, clses], dim=2)
+
+    pred_local_shape = _tranpose_and_gather_feat(local_shape, inds) # (batch, max_objects, dim) with "ind" order
+    pred_wh = _tranpose_and_gather_feat(wh, inds)
+    inst_segs = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds) #  (batch, max_objects, 1, h, w )
+
+    return detections, inst_segs
 
 def multi_pose_decode(
     heat, wh, kps, reg=None, hm_hp=None, hp_offset=None, K=100):

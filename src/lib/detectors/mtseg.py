@@ -8,11 +8,13 @@ from progress.bar import Bar
 import time
 import torch
 from pycocotools import  mask as mask_utils
+"""
 try:
     from external.nms import soft_nms
 except:
     print('NMS not imported! If you need it,'
           ' do \n cd $CenterNet_ROOT/src/lib/external \n make')
+"""
 from models.decode import ctseg_decode
 from models.utils import flip_tensor
 from utils.image import get_affine_transform
@@ -22,22 +24,22 @@ from utils.debugger import Debugger
 from .base_detector import BaseDetector
 
 
-class CtsegDetector(BaseDetector):
+class MtsegDetector(BaseDetector):
     def __init__(self, opt):
-        super(CtsegDetector, self).__init__(opt)
+        super(MtsegDetector, self).__init__(opt)
 
     def process(self, images, return_time=False):
         with torch.no_grad():
             output = self.model(images)[-1]
             hm = output['hm'].sigmoid_()
             wh = output['wh']
-            seg_feat = output['seg_feat']
-            conv_weigt = output['conv_weight']
+            saliency_map = output['saliency_map']
+            local_shape = output['local_shape']
             reg = output['reg'] if self.opt.reg_offset else None
             assert not self.opt.flip_test,"not support flip_test"
             torch.cuda.synchronize()
             forward_time = time.time()
-            dets,masks = ctseg_decode(hm, wh,seg_feat, conv_weigt, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
+            dets,masks = ctseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
 
         if return_time:
             return output, (dets,masks), forward_time

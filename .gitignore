@@ -1,3 +1,5 @@
+src/cache/*
+src/*.ipynb
 tmp/*
 cocoapi/*
 legacy/*
