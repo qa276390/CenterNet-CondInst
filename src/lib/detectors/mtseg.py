@@ -15,7 +15,7 @@ except:
     print('NMS not imported! If you need it,'
           ' do \n cd $CenterNet_ROOT/src/lib/external \n make')
 """
-from models.decode import ctseg_decode
+from models.decode import mtseg_decode
 from models.utils import flip_tensor
 from utils.image import get_affine_transform
 from utils.post_process import ctseg_post_process
@@ -39,7 +39,7 @@ class MtsegDetector(BaseDetector):
             assert not self.opt.flip_test,"not support flip_test"
             torch.cuda.synchronize()
             forward_time = time.time()
-            dets,masks = ctseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
+            dets,masks = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
 
         if return_time:
             return output, (dets,masks), forward_time
