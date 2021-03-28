@@ -454,20 +454,20 @@ class DLASeg(nn.Module):
         for head in self.heads:
             classes = self.heads[head]
             if head_conv > 0:
-              if head == "seg_feat":
+              if head == "seg_feat" or head == "saliency_map":
                   fc = nn.Sequential(
                       nn.Conv2d(channels[self.first_level], head_conv,
                                 kernel_size=3, padding=1, bias=False),
                       nn.BatchNorm2d(head_conv),
-                      nn.ReLU(inplace=True),
+                      nn.ReLU(),
                       nn.Conv2d(head_conv, head_conv,
                                    kernel_size=3, padding=1, bias=False),
                       nn.BatchNorm2d(head_conv),
-                      nn.ReLU(inplace=True),
+                      nn.ReLU(),
                       nn.Conv2d(head_conv, classes,
                                 kernel_size=1, padding=0, bias=False),
                       nn.BatchNorm2d(classes),
-                      nn.ReLU(inplace=True))
+                      nn.ReLU())
               else:
                   fc = nn.Sequential(
                       nn.Conv2d(channels[self.first_level], head_conv,

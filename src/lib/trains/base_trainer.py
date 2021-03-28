@@ -7,7 +7,8 @@ import torch
 from progress.bar import Bar
 from models.data_parallel import DataParallel
 from utils.utils import AverageMeter
-
+from tensorboardX import SummaryWriter #  remove this line when submit
+import datetime
 
 class ModelWithLoss(torch.nn.Module):
   def __init__(self, model, loss):
@@ -27,6 +28,8 @@ class BaseTrainer(object):
     self.optimizer = optimizer
     self.loss_stats, self.loss = self._get_losses(opt)
     self.model_with_loss = ModelWithLoss(model, self.loss)
+    ts = datetime.datetime.now().strftime("%m%d-%H%M")
+    self.writer = SummaryWriter(f'runs/{opt.task}-{opt.exp_id}-{ts}')
 
   def set_device(self, gpus, chunk_sizes, device):
     if len(gpus) > 1:
@@ -83,6 +86,7 @@ class BaseTrainer(object):
         avg_loss_stats[l].update(
           loss_stats[l].mean().item(), batch['input'].size(0))
         Bar.suffix = Bar.suffix + '|{} {:.4f} '.format(l, avg_loss_stats[l].avg)
+        
       if not opt.hide_data_time:
         Bar.suffix = Bar.suffix + '|Data {dt.val:.3f}s({dt.avg:.3f}s) ' \
           '|Net {bt.avg:.3f}s'.format(dt=data_time, bt=batch_time)
@@ -100,6 +104,10 @@ class BaseTrainer(object):
       del output, loss, loss_stats
     
     bar.finish()
+    
+    for l in avg_loss_stats:
+      self.writer.add_scalar(l, avg_loss_stats[l].avg, epoch)
+
     ret = {k: v.avg for k, v in avg_loss_stats.items()}
     ret['time'] = bar.elapsed_td.total_seconds() / 60.
     return ret, results

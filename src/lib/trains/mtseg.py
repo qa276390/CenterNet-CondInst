@@ -14,6 +14,8 @@ from utils.post_process import ctdet_post_process
 from utils.oracle_utils import gen_oracle_map
 from .base_trainer import BaseTrainer
 
+import time
+
 
 
 class MtsegLoss(torch.nn.Module):
@@ -76,10 +78,10 @@ class MtsegLoss(torch.nn.Module):
             #                                  head to mask                                 #
             #                                                                               #
             #################################################################################
-
+            #start_time = time.time()
             mask_loss+=self.crit_mask(output['local_shape'], output['saliency_map'], output['wh'],
-                                      batch['reg_mask'],batch['ind'],batch['instance_mask'])
-
+                                      batch['reg_mask'], batch['ind'], batch['wh'], batch['instance_mask'])
+            #print(f'full batch loss: {time.time()-start_time}')
         loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
                opt.off_weight * off_loss + opt.seg_weight * mask_loss
         loss_stats = {'loss': loss, 'hm_loss': hm_loss,

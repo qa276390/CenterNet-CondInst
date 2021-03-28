@@ -14,6 +14,7 @@ from utils.post_process import ctdet_post_process
 from utils.oracle_utils import gen_oracle_map
 from .base_trainer import BaseTrainer
 
+import time
 
 class CtsegLoss(torch.nn.Module):
     def __init__(self, opt):
@@ -68,10 +69,10 @@ class CtsegLoss(torch.nn.Module):
             if opt.reg_offset and opt.off_weight > 0:
                 off_loss += self.crit_reg(output['reg'], batch['reg_mask'],
                                           batch['ind'], batch['reg']) / opt.num_stacks
-
+            start_time = time.time()
             mask_loss+=self.crit_mask(output['seg_feat'],output['conv_weight'],
                                       batch['reg_mask'],batch['ind'],batch['instance_mask'])
-
+            print(f'full batch loss: {time.time()-start_time}')
         loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
                opt.off_weight * off_loss + opt.seg_weight * mask_loss
         loss_stats = {'loss': loss, 'hm_loss': hm_loss,

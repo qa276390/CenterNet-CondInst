@@ -1,4 +1,5 @@
 src/cache/*
+src/runs/*
 src/*.ipynb
 tmp/*
 cocoapi/*
