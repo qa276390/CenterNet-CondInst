@@ -62,13 +62,13 @@ class MtsegDetector(BaseDetector):
 
 
     def show_results(self, debugger, image, results):
-        debugger.add_img(image, img_id='ctseg')
+        debugger.add_img(image, img_id='mtseg')
         for j in range(1, self.num_classes + 1):
             for i in range(len(results[j]['boxs'])):
                 bbox=results[j]['boxs'][i]
                 mask = mask_utils.decode(results[j]['pred_mask'][i])
                 if bbox[4] > self.opt.vis_thresh:
-                    debugger.add_coco_bbox(bbox[:4], j - 1, bbox[4], img_id='ctseg')
-                    debugger.add_coco_seg(mask,img_id='ctseg')
+                    debugger.add_coco_bbox(bbox[:4], j - 1, bbox[4], img_id='mtseg')
+                    debugger.add_coco_seg(mask,img_id='mtseg')
         #debugger.show_all_imgs(pause=self.pause)
         debugger.save_all_imgs()

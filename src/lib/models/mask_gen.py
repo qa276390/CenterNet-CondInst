@@ -25,10 +25,10 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   for b in range(batch_size):
     for o in range(max_objects):
       idx = ind[b, o]
-      ct_0 = int(idx) % W # W
-      ct_1 = math.floor(int(idx) / W) # H
+      ct_0 = int(idx) % W # idxH
+      ct_1 = math.floor(int(idx) / W) # idxW
       #print('pred_wh', pred_wh[b, o])
-      boxh, boxw = round(float(pred_wh[b, o, 0])), round(float(pred_wh[b, o, 1]))
+      boxw, boxh = round(float(pred_wh[b, o, 0])), round(float(pred_wh[b, o, 1]))
 
       hfh_lo_, hfh_up_ = int(boxh / 2), math.ceil(boxh / 2) # h/2
       hfw_lo_, hfw_up_ = int(boxw / 2), math.ceil(boxw / 2) # w/2
@@ -46,15 +46,16 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
       try:
         #start_time_1 = time.time()
         masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = resized_shape * 1 
+        #masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] =  1 
         #print(f'assign: {time.time()-start_time_1}')
       except:
-        print('error!')
+        print('-----------------------error!-----------------------')
         print('boxh, boxw', boxh, boxw)
         print('hfw_lo_', 'hfw_up_', hfw_lo_, hfw_up_)
         print('hfw_lo', 'hfw_up', hfw_lo, hfw_up)
         print('ct_0', 'ct_1', ct_0, ct_1)
         print('resized_shape', resized_shape.size())
-        print('in shape', masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up].size())
+        print('into shape', masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up].size())
         import sys
         sys.exit(1)
   #print(f'full batch: {time.time()-start_time}')

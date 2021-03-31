@@ -242,7 +242,7 @@ class Debugger(object):
   def save_img(self, imgId='default', path='./cache/debug/'):
     cv2.imwrite(path + '{}.png'.format(imgId), self.imgs[imgId])
     
-  def save_all_imgs(self, path='./cache/debug/', prefix='', genID=False):
+  def save_all_imgs(self, path='./cache/debug/', prefix='', genID=True):
     if genID:
       try:
         idx = int(np.loadtxt(path + '/id.txt'))

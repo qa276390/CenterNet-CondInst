@@ -294,7 +294,6 @@ class opts(object):
     
     print('resume', opt.resume)
     if opt.resume and opt.load_model == '':
-      print('in???????????????????/')
       model_path = opt.save_dir[:-4] if opt.save_dir.endswith('TEST') \
                   else opt.save_dir
       opt.load_model = os.path.join(model_path, 'model_last.pth')
@@ -374,6 +373,9 @@ class opts(object):
                 'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
                 'dataset': 'coco'},
       'ctseg': {'default_resolution': [512, 512], 'num_classes': 80,
+              'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
+              'dataset': 'coco'},
+      'mtseg': {'default_resolution': [512, 512], 'num_classes': 80,
               'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
               'dataset': 'coco'},
       'exdet': {'default_resolution': [512, 512], 'num_classes': 80, 
