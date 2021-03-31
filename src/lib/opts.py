@@ -246,7 +246,9 @@ class opts(object):
 
     opt.gpus_str = opt.gpus
     opt.gpus = [int(gpu) for gpu in opt.gpus.split(',')]
+    print('-', opt.gpus)
     opt.gpus = [i for i in range(len(opt.gpus))] if opt.gpus[0] >=0 else [-1]
+    print('-', opt.gpus)
     opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
     opt.test_scales = [float(i) for i in opt.test_scales.split(',')]
 
@@ -265,11 +267,12 @@ class opts(object):
     if opt.trainval:
       opt.val_intervals = 100000000
 
-    if opt.debug > 0:
-      opt.num_workers = 0
-      opt.batch_size = 1
-      opt.gpus = [opt.gpus[0]]
-      opt.master_batch_size = -1
+
+    #if opt.debug > 0:
+    #  opt.num_workers = 0
+    #  opt.batch_size = 1
+    #  opt.gpus = [opt.gpus[0]]
+    #  opt.master_batch_size = -1
 
     if opt.master_batch_size == -1:
       opt.master_batch_size = opt.batch_size // len(opt.gpus)

@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import torch
 #from torch.utils.data.dataloader import numpy_type_map,int_classes,string_classes
+from torch.utils.data._utils.collate import numpy_type_map
 from torch._six import int_classes, string_classes
 from torch.utils.data import _utils
 import collections

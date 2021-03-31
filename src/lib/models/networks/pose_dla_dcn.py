@@ -453,8 +453,9 @@ class DLASeg(nn.Module):
         self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
+            print('Generating head:', head, 'with head_conv:', head_conv)
             if head_conv > 0:
-              if head == "seg_feat" or head == "saliency_map":
+              if head == "seg_feat" or head == "saliency_map" or head == "local_shape":
                   fc = nn.Sequential(
                       nn.Conv2d(channels[self.first_level], head_conv,
                                 kernel_size=3, padding=1, bias=False),

@@ -33,13 +33,13 @@ class MtsegDetector(BaseDetector):
             output = self.model(images)[-1]
             hm = output['hm'].sigmoid_()
             wh = output['wh']
-            saliency_map = output['saliency_map']
-            local_shape = output['local_shape']
+            saliency_map = output['saliency_map'].sigmoid_()
+            local_shape = output['local_shape'].sigmoid_()
             reg = output['reg'] if self.opt.reg_offset else None
             assert not self.opt.flip_test,"not support flip_test"
             torch.cuda.synchronize()
             forward_time = time.time()
-            dets,masks = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
+            dets, masks, _ = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
 
         if return_time:
             return output, (dets,masks), forward_time

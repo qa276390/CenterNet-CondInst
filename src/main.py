@@ -63,7 +63,7 @@ def main(opt):
       collate_fn= collate,
       shuffle=True,
       num_workers=opt.num_workers,
-      pin_memory=True,
+      pin_memory=True, 
       drop_last=True
   )
 

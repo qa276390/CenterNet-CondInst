@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import torch
 import numpy as np
+from torchvision.utils import make_grid
 
 from models.losses import FocalLoss,DiceLoss, MaskBCELoss
 from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
@@ -13,6 +14,7 @@ from utils.debugger import Debugger
 from utils.post_process import ctdet_post_process
 from utils.oracle_utils import gen_oracle_map
 from .base_trainer import BaseTrainer
+from models.decode import mtseg_decode
 
 import time
 
@@ -99,8 +101,10 @@ class MtsegTrainer(BaseTrainer):
         return loss_states, loss
 
     def debug(self, batch, output, iter_id):
+        writer = self.writer
         opt = self.opt
         reg = output['reg'] if opt.reg_offset else None
+        """
         dets = ctdet_decode(
             output['hm'], output['wh'], reg=reg,
             cat_spec_wh=opt.cat_spec_wh, K=opt.K)
@@ -108,12 +112,27 @@ class MtsegTrainer(BaseTrainer):
         dets[:, :, :4] *= opt.down_ratio
         dets_gt = batch['meta']['gt_det'].numpy().reshape(1, -1, dets.shape[2])
         dets_gt[:, :, :4] *= opt.down_ratio
+        """
+        hm = output['hm'].sigmoid_()
+        wh = output['wh']
+        saliency_map = output['saliency_map'].sigmoid_()
+        local_shape = output['local_shape'].sigmoid_()
+        print(' local_shape', local_shape.size())
+
+        dets_mt, masks, pred_local_shape = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K)
+
+       
+
         for i in range(1):
-            debugger = Debugger(
-                dataset=opt.dataset, ipynb=(opt.debug == 3), theme=opt.debugger_theme)
+            
+            #debugger = Debugger(
+            #    dataset=opt.dataset, ipynb=(opt.debug == 3), theme=opt.debugger_theme)
+            print('img', batch['input'][i].size())
             img = batch['input'][i].detach().cpu().numpy().transpose(1, 2, 0)
             img = np.clip(((
                                    img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
+            img = img.transpose(2, 0, 1)
+            """
             pred = debugger.gen_colormap(output['hm'][i].detach().cpu().numpy())
             gt = debugger.gen_colormap(batch['hm'][i].detach().cpu().numpy())
             debugger.add_blend_img(img, pred, 'pred_hm')
@@ -125,6 +144,24 @@ class MtsegTrainer(BaseTrainer):
                                            dets[i, k, 4], img_id='out_pred')
 
             debugger.add_img(img, img_id='out_gt')
+            """
+            print('pred_local_shape', pred_local_shape.size())
+            S = int(pred_local_shape.size(2)**0.5)
+            single_local_shape = pred_local_shape[i]
+            reshape_local_shape = torch.reshape(single_local_shape, (single_local_shape.size(0), S, S)).unsqueeze(1)
+            local_grid = make_grid(reshape_local_shape)
+
+            smap = saliency_map[i]
+
+            mask = masks[i].unsqueeze(0)
+            re_masks = mask.unsqueeze(2).reshape(mask.size(0)*mask.size(1), 1, mask.size(2), mask.size(3))
+            #print('re_masks', re_masks.size())
+            mask_grid = make_grid(re_masks)
+            writer.add_image('pred_masks',mask_grid,iter_id)
+            writer.add_image('pred_local_shape',local_grid, iter_id)
+            writer.add_image('pred_saliency_map',smap , iter_id)
+            writer.add_image('gt_img', img, iter_id)
+            """
             for k in range(len(dets_gt[i])):
                 if dets_gt[i, k, 4] > opt.center_thresh:
                     debugger.add_coco_bbox(dets_gt[i, k, :4], dets_gt[i, k, -1],
@@ -134,7 +171,7 @@ class MtsegTrainer(BaseTrainer):
                 debugger.save_all_imgs(opt.debug_dir, prefix='{}'.format(iter_id))
             else:
                 debugger.show_all_imgs(pause=True)
-
+            """
     def save_result(self, output, batch, results):
         reg = output['reg'] if self.opt.reg_offset else None
         dets = ctdet_decode(

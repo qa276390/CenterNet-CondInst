@@ -597,7 +597,8 @@ def mtseg_decode(heat, wh, saliency_map ,local_shape ,reg=None, cat_spec_wh=Fals
     #pred_wh = _tranpose_and_gather_feat(wh, inds)
     inst_segs = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds) #  (batch, max_objects, 1, h, w )
 
-    return detections, inst_segs.squeeze(2)
+    return detections, inst_segs.squeeze(2), pred_local_shape #  (batch, max_objects, h, w )
+
 
 def multi_pose_decode(
     heat, wh, kps, reg=None, hm_hp=None, hp_offset=None, K=100):

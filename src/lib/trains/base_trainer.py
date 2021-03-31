@@ -96,13 +96,14 @@ class BaseTrainer(object):
       else:
         bar.next()
       
-      if opt.debug > 0:
-        self.debug(batch, output, iter_id)
+      if opt.debug > 0 and iter_id == 0:
+        self.debug(batch, output, epoch) # iter_id -> epoch
       
       if opt.test:
         self.save_result(output, batch, results)
       del output, loss, loss_stats
     
+
     bar.finish()
     
     for l in avg_loss_stats:
