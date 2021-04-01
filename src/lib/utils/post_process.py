@@ -107,6 +107,7 @@ def ctseg_post_process(dets,masks,c, s, h, w,img_h,img_w, num_classes):
   from concurrent.futures import ThreadPoolExecutor
   worker = ThreadPoolExecutor(max_workers=8)
   ret = []
+  
   for i in range(dets.shape[0]):
     top_preds = {}
     dets[i, :, :2] = transform_preds(
@@ -119,14 +120,33 @@ def ctseg_post_process(dets,masks,c, s, h, w,img_h,img_w, num_classes):
     for j in range(num_classes):
       inds = (classes == j)
 
+      """
+      if len(masks[i, inds]) > 2 and abs(dets[i, inds, 1][0] - dets[i, inds, 0][0]) > 300 and abs(dets[i, inds, 2][0] - dets[i, inds, 3][0]) > 300:
+        from matplotlib import pyplot as plt
+        for a in range(len(masks[i, inds])):
+        
+          tshape = masks[i, inds][a]
+          print('size ', tshape.shape)
+          qshape = (tshape > 0.5).astype(int)
+          plt.imshow(qshape)
+          plt.savefig(f'./cache/tmp_mask_0_{a}.png')
+
+          lshape = np.asfortranarray(cv2.warpAffine(tshape, trans, (img_w, img_h), flags=cv2.INTER_LINEAR) > 0.5).astype(np.uint8)
+          print('size ', lshape.shape)
+          plt.imshow(lshape)
+          plt.savefig(f'./cache/tmp_mask_1_{a}.png')
+        import sys
+        sys.exit(0)
+      """
       top_preds[j + 1] = {'boxs': np.concatenate([
         dets[i, inds, :4].astype(np.float32),
         dets[i, inds, 4:5].astype(np.float32)], axis=1),
 		  "pred_mask":list(worker.map(lambda x:mask_utils.encode(
 				  (np.asfortranarray(cv2.warpAffine(x, trans, (img_w, img_h),
-				   flags=cv2.INTER_CUBIC) > 0.5).astype(np.uint8))),masks[i, inds]))
+				   flags=cv2.INTER_LINEAR) > 0.5).astype(np.uint8))),masks[i, inds])) # CUBIC?
                           }
     ret.append(top_preds)
+  
   return ret
 
 def multi_pose_post_process(dets, c, s, h, w):

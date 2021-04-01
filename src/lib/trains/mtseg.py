@@ -5,6 +5,7 @@ from __future__ import print_function
 import torch
 import numpy as np
 from torchvision.utils import make_grid
+import cv2
 
 from models.losses import FocalLoss,DiceLoss, MaskBCELoss
 from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
@@ -117,9 +118,8 @@ class MtsegTrainer(BaseTrainer):
         wh = output['wh']
         saliency_map = output['saliency_map'].sigmoid_()
         local_shape = output['local_shape'].sigmoid_()
-        print(' local_shape', local_shape.size())
 
-        dets_mt, masks, pred_local_shape = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K)
+        dets_mt, masks, pred_local_shape, resize_local_shape = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K)
 
        
 
@@ -129,8 +129,7 @@ class MtsegTrainer(BaseTrainer):
             #    dataset=opt.dataset, ipynb=(opt.debug == 3), theme=opt.debugger_theme)
             print('img', batch['input'][i].size())
             img = batch['input'][i].detach().cpu().numpy().transpose(1, 2, 0)
-            img = np.clip(((
-                                   img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
+            img = np.clip(((img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
             img = img.transpose(2, 0, 1)
             """
             pred = debugger.gen_colormap(output['hm'][i].detach().cpu().numpy())
@@ -145,20 +144,21 @@ class MtsegTrainer(BaseTrainer):
 
             debugger.add_img(img, img_id='out_gt')
             """
-            print('pred_local_shape', pred_local_shape.size())
+            #print('pred_local_shape', pred_local_shape.size())
             S = int(pred_local_shape.size(2)**0.5)
             single_local_shape = pred_local_shape[i]
             reshape_local_shape = torch.reshape(single_local_shape, (single_local_shape.size(0), S, S)).unsqueeze(1)
             local_grid = make_grid(reshape_local_shape)
-
+            single_resize_local_shape = resize_local_shape[i]
+            _resize_local_shape = single_resize_local_shape.unsqueeze(2).reshape(single_resize_local_shape(0)*single_resize_local_shape(1), 1, single_resize_local_shape(2), single_resize_local_shape(3))
+            resize_local_grid = make_grid(_resize_local_shape)
             smap = saliency_map[i]
-
             mask = masks[i].unsqueeze(0)
-            re_masks = mask.unsqueeze(2).reshape(mask.size(0)*mask.size(1), 1, mask.size(2), mask.size(3))
-            #print('re_masks', re_masks.size())
-            mask_grid = make_grid(re_masks)
+            _masks = mask.unsqueeze(2).reshape(mask.size(0)*mask.size(1), 1, mask.size(2), mask.size(3))
+            mask_grid = make_grid(_masks)
             writer.add_image('pred_masks',mask_grid,iter_id)
             writer.add_image('pred_local_shape',local_grid, iter_id)
+            writer.add_image('pred_resize_local_shape',resize_local_grid, iter_id)
             writer.add_image('pred_saliency_map',smap , iter_id)
             writer.add_image('gt_img', img, iter_id)
             """

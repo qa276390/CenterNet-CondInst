@@ -21,6 +21,7 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
   saliency_map_expand = saliency_map.unsqueeze(1).expand(saliency_map.size(0), max_objects, saliency_map.size(1), saliency_map.size(2), saliency_map.size(3)) 
   # saliency_map_expand (batch, max_objects, 1, h, w )
   masking_with_local_shape = torch.zeros_like(saliency_map_expand)
+  masking = torch.zeros_like(saliency_map_expand)
   #start_time = time.time()
   for b in range(batch_size):
     for o in range(max_objects):
@@ -41,11 +42,13 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
       else:
         resized_shape = F.interpolate(reshape_local_shape[b, o, :, :].unsqueeze(0).unsqueeze(0), size=tuple((boxh, boxw)))
         resized_shape = resized_shape.squeeze(0)[:, hfh_lo_-hfh_lo:hfh_up+hfh_lo_, hfw_lo_-hfw_lo:hfw_up+hfw_lo_]
+
       #print(f'interpolate: {time.time()-start_time_1}, (boxh, boxw), {boxh, boxw}')
        
       try:
         #start_time_1 = time.time()
-        masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = resized_shape * 1 
+        masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = resized_shape * 1
+        masking[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] = 1
         #masking_with_local_shape[b, o, :, ct_1-hfh_lo:ct_1+hfh_up , ct_0-hfw_lo:ct_0+hfw_up] =  1 
         #print(f'assign: {time.time()-start_time_1}')
       except:
@@ -59,5 +62,19 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
         import sys
         sys.exit(1)
   #print(f'full batch: {time.time()-start_time}')
+
   inst_segs = saliency_map_expand * masking_with_local_shape
-  return inst_segs # (batch, max_objects, h, w )
+  #inst_segs = masking_with_local_shape
+  #inst_segs = saliency_map_expand * masking
+  
+  """
+  from matplotlib import pyplot as plt
+  for i in range(10):
+    tshape = masking_with_local_shape[0, i, :, :].cpu().numpy().transpose(1, 2, 0)
+    plt.imshow(tshape)
+    plt.savefig(f'./cache/tmp_shape_{i}.png')
+    qshape = (tshape > 0.5).astype(int)
+    plt.imshow(qshape)
+    plt.savefig(f'./cache/qun_shape_{i}.png')
+  """
+  return inst_segs, masking_with_local_shape # (batch, max_objects, h, w )

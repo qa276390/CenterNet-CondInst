@@ -39,7 +39,7 @@ class MtsegDetector(BaseDetector):
             assert not self.opt.flip_test,"not support flip_test"
             torch.cuda.synchronize()
             forward_time = time.time()
-            dets, masks, _ = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
+            dets, masks, _, _ = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
 
         if return_time:
             return output, (dets,masks), forward_time
