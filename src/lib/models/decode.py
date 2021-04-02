@@ -594,9 +594,8 @@ def mtseg_decode(heat, wh, saliency_map ,local_shape ,reg=None, cat_spec_wh=Fals
     detections = torch.cat([bboxes, scores, clses], dim=2)
 
     pred_local_shape = _tranpose_and_gather_feat(local_shape, inds) # (batch, max_objects, dim) with "ind" order
-    #pred_wh = _tranpose_and_gather_feat(wh, inds)
     inst_segs, resize_local_shape = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds) #  (batch, max_objects, 1, h, w )
-
+    
     return detections, inst_segs.squeeze(2), pred_local_shape, resize_local_shape #  (batch, max_objects, h, w )
 
 

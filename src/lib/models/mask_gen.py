@@ -29,7 +29,7 @@ def multiply_local_shape_and_map(local_shape, saliency_map, pred_wh, ind):
       ct_0 = int(idx) % W # idxH
       ct_1 = math.floor(int(idx) / W) # idxW
       #print('pred_wh', pred_wh[b, o])
-      boxw, boxh = round(float(pred_wh[b, o, 0])), round(float(pred_wh[b, o, 1]))
+      boxw, boxh = int(pred_wh[b, o, 0]) + 1, int(pred_wh[b, o, 1]) + 1
 
       hfh_lo_, hfh_up_ = int(boxh / 2), math.ceil(boxh / 2) # h/2
       hfw_lo_, hfw_up_ = int(boxw / 2), math.ceil(boxw / 2) # w/2

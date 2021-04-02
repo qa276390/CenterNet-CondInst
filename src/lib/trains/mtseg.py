@@ -150,7 +150,7 @@ class MtsegTrainer(BaseTrainer):
             reshape_local_shape = torch.reshape(single_local_shape, (single_local_shape.size(0), S, S)).unsqueeze(1)
             local_grid = make_grid(reshape_local_shape)
             single_resize_local_shape = resize_local_shape[i]
-            _resize_local_shape = single_resize_local_shape.unsqueeze(2).reshape(single_resize_local_shape(0)*single_resize_local_shape(1), 1, single_resize_local_shape(2), single_resize_local_shape(3))
+            _resize_local_shape = single_resize_local_shape.unsqueeze(2).reshape(single_resize_local_shape.size(0)*single_resize_local_shape.size(1), 1, single_resize_local_shape.size(2), single_resize_local_shape.size(3))
             resize_local_grid = make_grid(_resize_local_shape)
             smap = saliency_map[i]
             mask = masks[i].unsqueeze(0)

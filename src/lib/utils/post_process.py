@@ -107,7 +107,7 @@ def ctseg_post_process(dets,masks,c, s, h, w,img_h,img_w, num_classes):
   from concurrent.futures import ThreadPoolExecutor
   worker = ThreadPoolExecutor(max_workers=8)
   ret = []
-  
+
   for i in range(dets.shape[0]):
     top_preds = {}
     dets[i, :, :2] = transform_preds(
@@ -117,6 +117,7 @@ def ctseg_post_process(dets,masks,c, s, h, w,img_h,img_w, num_classes):
     classes = dets[i, :, -1]
 
     trans = get_affine_transform(c[i], s[i], 0, (w, h), inv=1)
+
     for j in range(num_classes):
       inds = (classes == j)
 
