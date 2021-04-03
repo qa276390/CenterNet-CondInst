@@ -174,12 +174,13 @@ class MaskBCELoss(nn.Module):
     super(MaskBCELoss, self).__init__()
     self.bceloss = nn.BCELoss(reduction='sum')
   
-  def forward(self, local_shape, saliency_map, wh, mask, inds, wh_gt, target):
+  def forward(self, local_shape, saliency_map, wh, reg, mask, inds, wh_gt, target, reg_gt):
     n_obj = target.size(1)
     b_size = target.size(0)
     pred_local_shape = _tranpose_and_gather_feat(local_shape, inds) # (batch, max_objects, dim) with "ind" order
-    pred_wh = _tranpose_and_gather_feat(wh, inds)
-    inst_segs, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh_gt, inds) #  (batch, max_objects, 1, h, w )
+    pred_wh = _tranpose_and_gather_feat(wh, inds) # use or not
+    pred_reg = _tranpose_and_gather_feat(reg, inds) # use or not
+    inst_segs, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg) #  (batch, max_objects, 1, h, w )
     mask = mask[:, :n_obj].unsqueeze(2).unsqueeze(3).expand_as(target).float()
     inst_segs = inst_segs[:, :n_obj].squeeze(2)
 

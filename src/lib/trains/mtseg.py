@@ -82,8 +82,8 @@ class MtsegLoss(torch.nn.Module):
             #                                                                               #
             #################################################################################
             #start_time = time.time()
-            mask_loss+=self.crit_mask(output['local_shape'], output['saliency_map'], output['wh'],
-                                      batch['reg_mask'], batch['ind'], batch['wh'], batch['instance_mask'])
+            mask_loss+=self.crit_mask(output['local_shape'], output['saliency_map'], output['wh'], output['reg'],
+                                      batch['reg_mask'], batch['ind'], batch['wh'], batch['instance_mask'], batch['reg'])
             #print(f'full batch loss: {time.time()-start_time}')
         loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
                opt.off_weight * off_loss + opt.seg_weight * mask_loss
