@@ -441,14 +441,7 @@ class DLASeg(nn.Module):
 
         self.ida_up = IDAUp(out_channel, channels[self.first_level:self.last_level], 
                             [2 ** i for i in range(self.last_level - self.first_level)])
-        
-        ###########################################ctseg##############################################
-        #    opt.heads = {'hm': opt.num_classes,
-        #           'wh': 2 if not opt.cat_spec_wh else 2 * opt.num_classes,
-        #           'conv_weight': 2*opt.seg_feat_channel**2 + 5*opt.seg_feat_channel + 1,
-        #           'seg_feat': opt.seg_feat_channel
-        #           }
-        ##############################################################################################
+ 
 
         self.heads = heads
         for head in self.heads:
@@ -473,6 +466,7 @@ class DLASeg(nn.Module):
                   fc = nn.Sequential(
                       nn.Conv2d(channels[self.first_level], head_conv,
                         kernel_size=3, padding=1, bias=False),
+                      nn.ReLU(),
                       nn.Conv2d(head_conv, classes,
                         kernel_size=final_kernel, stride=1,
                         padding=final_kernel // 2, bias=True))

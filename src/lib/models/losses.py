@@ -184,7 +184,7 @@ class MaskBCELoss(nn.Module):
     mask = mask[:, :n_obj].unsqueeze(2).unsqueeze(3).expand_as(target).float()
     inst_segs = inst_segs[:, :n_obj].squeeze(2)
 
-    losses = self.bceloss(inst_segs*mask, target*mask)/(mask.sum() + 1e-4)
+    losses = self.bceloss(inst_segs*mask, target*mask)/((target*mask).sum() + 1e-4)
     return losses
 
 
