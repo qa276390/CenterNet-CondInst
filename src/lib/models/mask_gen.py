@@ -137,7 +137,7 @@ def multiply_local_shape_and_map(local_shape, saliency_map, wh, ind, reg, score=
   inst_segs = saliency_map_expand * masking_with_local_shape.float()
   #inst_segs = masking_with_local_shape.float()
 
-  return inst_segs, masking_with_local_shape # (batch, max_objects, h, w )
+  return inst_segs, masking_with_local_shape, saliency_map_expand # (batch, max_objects, h, w )
 
 def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True):
   """

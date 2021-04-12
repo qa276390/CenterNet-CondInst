@@ -118,7 +118,7 @@ class MtsegTrainer(BaseTrainer):
         saliency_map = output['saliency_map'].sigmoid_()
         local_shape = output['local_shape'].sigmoid_()
 
-        dets_mt, masks, pred_local_shape, resize_local_shape = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K)
+        dets_mt, masks, pred_local_shape, resize_local_shape, saliency_map = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K)
 
        
 
@@ -151,7 +151,13 @@ class MtsegTrainer(BaseTrainer):
             single_resize_local_shape = resize_local_shape[i]
             _resize_local_shape = single_resize_local_shape.unsqueeze(2).reshape(single_resize_local_shape.size(0)*single_resize_local_shape.size(1), 1, single_resize_local_shape.size(2), single_resize_local_shape.size(3))
             resize_local_grid = make_grid(_resize_local_shape)
-            smap = saliency_map[i]
+
+            if opt.smap_class_specify:
+                single_smap = saliency_map[i]
+                _single_smap = single_smap.unsqueeze(2).reshape(single_smap.size(0)*single_smap.size(1), 1, single_smap.size(2), single_smap.size(3))
+                smap = make_grid(_single_smap)
+            else:
+                smap = saliency_map[i]
             mask = masks[i].unsqueeze(0)
             _masks = mask.unsqueeze(2).reshape(mask.size(0)*mask.size(1), 1, mask.size(2), mask.size(3))
             mask_grid = make_grid(_masks)

@@ -184,7 +184,7 @@ class MaskBCELoss(nn.Module):
 
     pred_score = None if hm_for_clas is None else _tranpose_and_gather_feat(hm_for_clas, inds)
 
-    inst_segs, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg, pred_score) #  (batch, max_objects, 1, h, w )
+    inst_segs, _, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg, pred_score) #  (batch, max_objects, 1, h, w )
     #_inst_segs, _ = _multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg) #  (batch, max_objects, 1, h, w )
     
     mask = mask[:, :n_obj].unsqueeze(2).unsqueeze(3).expand_as(target).float()

@@ -563,6 +563,7 @@ def ctseg_decode(heat, wh, seg_feat ,conv_weight ,reg=None, cat_spec_wh=False, K
     return detections,mask
 
 def mtseg_decode(heat, wh, saliency_map ,local_shape ,reg=None, cat_spec_wh=False, K=100):
+    hm = heat
     batch, cat, height, width = heat.size()
 
     # heat = torch.sigmoid(heat)
@@ -595,13 +596,17 @@ def mtseg_decode(heat, wh, saliency_map ,local_shape ,reg=None, cat_spec_wh=Fals
     detections = torch.cat([bboxes, scores, clses], dim=2)
 
     pred_local_shape = _tranpose_and_gather_feat(local_shape, inds) # (batch, max_objects, dim) with "ind" order
-    inst_segs, resize_local_shape = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds, reg) #  (batch, max_objects, 1, h, w )
+    pred_score = _tranpose_and_gather_feat(hm, inds)
+    if saliency_map.size(1) == 1:
+        inst_segs, resize_local_shape, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds, reg)
+    else:
+        inst_segs, resize_local_shape, saliency_map = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds, reg, pred_score) #  (batch, max_objects, 1, h, w )
     #_inst_segs, _resize_local_shape = _multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds, reg) #  (batch, max_objects, 1, h, w )
     #inst_segs, resize_local_shape = _inst_segs, _resize_local_shape
     #print((inst_segs - _inst_segs).sum())
     #inst_segs = inst_segs - _inst_segs
     
-    return detections, inst_segs.squeeze(2), pred_local_shape, resize_local_shape #  (batch, max_objects, h, w )
+    return detections, inst_segs.squeeze(2), pred_local_shape, resize_local_shape, saliency_map #  (batch, max_objects, h, w )
 
 
 def multi_pose_decode(
