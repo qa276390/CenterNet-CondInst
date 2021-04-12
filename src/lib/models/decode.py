@@ -7,6 +7,7 @@ import torch.nn as nn
 from .utils import _gather_feat, _tranpose_and_gather_feat
 import torch.nn.functional as F
 from .mask_gen import multiply_local_shape_and_map
+from .mask_gen import _multiply_local_shape_and_map
 
 
 def _nms(heat, kernel=3):
@@ -595,7 +596,11 @@ def mtseg_decode(heat, wh, saliency_map ,local_shape ,reg=None, cat_spec_wh=Fals
 
     pred_local_shape = _tranpose_and_gather_feat(local_shape, inds) # (batch, max_objects, dim) with "ind" order
     inst_segs, resize_local_shape = multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds, reg) #  (batch, max_objects, 1, h, w )
-
+    #_inst_segs, _resize_local_shape = _multiply_local_shape_and_map(pred_local_shape, saliency_map, wh, inds, reg) #  (batch, max_objects, 1, h, w )
+    #inst_segs, resize_local_shape = _inst_segs, _resize_local_shape
+    #print((inst_segs - _inst_segs).sum())
+    #inst_segs = inst_segs - _inst_segs
+    
     return detections, inst_segs.squeeze(2), pred_local_shape, resize_local_shape #  (batch, max_objects, h, w )
 
 

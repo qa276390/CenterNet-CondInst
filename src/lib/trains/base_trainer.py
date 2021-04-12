@@ -37,6 +37,7 @@ class BaseTrainer(object):
         self.model_with_loss, device_ids=gpus, 
         chunk_sizes=chunk_sizes).to(device)
     else:
+      print('single GPU')
       self.model_with_loss = self.model_with_loss.to(device)
     
     for state in self.optimizer.state.values():

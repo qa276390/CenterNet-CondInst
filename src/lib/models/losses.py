@@ -14,6 +14,7 @@ from .utils import _tranpose_and_gather_feat
 import torch.nn.functional as F
 import math
 from .mask_gen import multiply_local_shape_and_map
+from .mask_gen import _multiply_local_shape_and_map
 
 
 
@@ -174,16 +175,22 @@ class MaskBCELoss(nn.Module):
     super(MaskBCELoss, self).__init__()
     self.bceloss = nn.BCELoss(reduction='sum')
   
-  def forward(self, local_shape, saliency_map, wh, reg, mask, inds, wh_gt, target, reg_gt):
+  def forward(self, local_shape, saliency_map, wh, reg, mask, inds, wh_gt, target, reg_gt, hm_for_clas=None):
     n_obj = target.size(1)
     b_size = target.size(0)
     pred_local_shape = _tranpose_and_gather_feat(local_shape, inds) # (batch, max_objects, dim) with "ind" order
     pred_wh = _tranpose_and_gather_feat(wh, inds) # use or not
     pred_reg = _tranpose_and_gather_feat(reg, inds) # use or not
-    inst_segs, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg) #  (batch, max_objects, 1, h, w )
+
+    pred_score = None if hm_for_clas is None else _tranpose_and_gather_feat(hm_for_clas, inds)
+
+    inst_segs, _ = multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg, pred_score) #  (batch, max_objects, 1, h, w )
+    #_inst_segs, _ = _multiply_local_shape_and_map(pred_local_shape, saliency_map, pred_wh, inds, pred_reg) #  (batch, max_objects, 1, h, w )
+    
     mask = mask[:, :n_obj].unsqueeze(2).unsqueeze(3).expand_as(target).float()
     inst_segs = inst_segs[:, :n_obj].squeeze(2)
-
+    #_inst_segs = _inst_segs[:, :n_obj].squeeze(2)
+    
     losses = self.bceloss(inst_segs*mask, target*mask)/((target*mask).sum() + 1e-4)
     return losses
 

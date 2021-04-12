@@ -30,8 +30,9 @@ class MtsegLoss(torch.nn.Module):
         self.crit_wh = torch.nn.L1Loss(reduction='sum') if opt.dense_wh else \
             NormRegL1Loss() if opt.norm_wh else \
                 RegWeightedL1Loss() if opt.cat_spec_wh else self.crit_reg
-        self.crit_mask = MaskBCELoss()
         self.opt = opt
+        print('opt device', opt.device)
+        self.crit_mask = MaskBCELoss().to(opt.device)
 
     def forward(self, outputs, batch):
         opt = self.opt
@@ -77,14 +78,12 @@ class MtsegLoss(torch.nn.Module):
             if opt.reg_offset and opt.off_weight > 0:
                 off_loss += self.crit_reg(output['reg'], batch['reg_mask'],
                                           batch['ind'], batch['reg']) / opt.num_stacks
-            #################################################################################
-            #                                  head to mask                                 #
-            #                                                                               #
-            #################################################################################
-            #start_time = time.time()
+            #start_time = time.time() 
+            hm_for_class = output['hm'] if opt.smap_class_specify else None 
             mask_loss+=self.crit_mask(output['local_shape'], output['saliency_map'], output['wh'], output['reg'],
-                                      batch['reg_mask'], batch['ind'], batch['wh'], batch['instance_mask'], batch['reg'])
+                                      batch['reg_mask'], batch['ind'], batch['wh'], batch['instance_mask'], batch['reg'], hm_for_class)
             #print(f'full batch loss: {time.time()-start_time}')
+
         loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
                opt.off_weight * off_loss + opt.seg_weight * mask_loss
         loss_stats = {'loss': loss, 'hm_loss': hm_loss,
