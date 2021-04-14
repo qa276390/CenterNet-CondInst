@@ -118,7 +118,7 @@ class MtsegTrainer(BaseTrainer):
         saliency_map = output['saliency_map'].sigmoid_()
         local_shape = output['local_shape'].sigmoid_()
 
-        dets_mt, masks, pred_local_shape, resize_local_shape, saliency_map = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K)
+        dets_mt, masks, pred_local_shape, resize_local_shape, _ = mtseg_decode(hm, wh, saliency_map, local_shape, reg=reg, cat_spec_wh=opt.cat_spec_wh, K=opt.K, cat_spec_smap=self.opt.smap_class_specify)
 
        
 
@@ -153,8 +153,8 @@ class MtsegTrainer(BaseTrainer):
             resize_local_grid = make_grid(_resize_local_shape)
 
             if opt.smap_class_specify:
-                single_smap = saliency_map[i]
-                _single_smap = single_smap.unsqueeze(2).reshape(single_smap.size(0)*single_smap.size(1), 1, single_smap.size(2), single_smap.size(3))
+                single_smap = saliency_map[i] # (80, h, w)
+                _single_smap = single_smap.unsqueeze(1) # (80, 1, h, w)
                 smap = make_grid(_single_smap)
             else:
                 smap = saliency_map[i]

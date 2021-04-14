@@ -115,14 +115,13 @@ def multiply_local_shape_and_map(local_shape, saliency_map, wh, ind, reg, score=
     _, pred_score_ind = torch.max(score_map, dim=2, keepdim=True)
     saliency_map_expand = torch.gather(saliency_map_expand, dim=2, index=pred_score_ind)
 
-  
   xs = ((ind % W).float() + reg[:, :, 0]).unsqueeze(2)
   ys = ((ind // W).float() + reg[:, :, 1]).unsqueeze(2)
   Bboxes = torch.cat([xs - wh[..., 0:1] / 2,
                       ys - wh[..., 1:2] / 2,
                       xs + wh[..., 0:1] / 2,
                       ys + wh[..., 1:2] / 2], dim=2).to(saliency_map_expand.device)
-  
+
   masks = torch.reshape(reshape_local_shape, (N_in_batch, S, S))
   bboxes = torch.reshape(Bboxes, (N_in_batch, 4))
 
@@ -132,7 +131,7 @@ def multiply_local_shape_and_map(local_shape, saliency_map, wh, ind, reg, score=
   masking_with_local_shape = paste_masks_in_image(masks, bboxes, (H, W), threshold=-1)
   masking_with_local_shape = torch.reshape(masking_with_local_shape, (batch_size, max_objects, 1, H, W))
   #masking_with_local_shape = masking_with_local_shape.expand(batch_size, max_objects, C, H, W)
- 
+
 
   inst_segs = saliency_map_expand * masking_with_local_shape.float()
   #inst_segs = masking_with_local_shape.float()
@@ -239,7 +238,7 @@ def paste_masks_in_image(
     # CPU is most efficient when they are pasted one by one with skip_empty=True
     # so that it performs minimal number of operations.
     num_chunks = N
-    print('cpu')
+    print('-----------!!cpu!!-------------')
   else:
     # GPU benefits from parallelism for larger chunks, but may have memory issue
     # int(img_h) because shape may be tensors in tracing

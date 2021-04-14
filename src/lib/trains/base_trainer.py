@@ -108,7 +108,10 @@ class BaseTrainer(object):
     bar.finish()
     
     for l in avg_loss_stats:
-      self.writer.add_scalar(l, avg_loss_stats[l].avg, epoch)
+      if phase == 'train':
+        self.writer.add_scalar(f"train/{l}", avg_loss_stats[l].avg, epoch)
+      else:
+        self.writer.add_scalar(f"val/{l}", avg_loss_stats[l].avg, epoch)
 
     ret = {k: v.avg for k, v in avg_loss_stats.items()}
     ret['time'] = bar.elapsed_td.total_seconds() / 60.
