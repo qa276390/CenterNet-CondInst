@@ -41,8 +41,8 @@ class MtsegLoss(torch.nn.Module):
             output = outputs[s]
             if not opt.mse_loss:
                 output['hm'] = _sigmoid(output['hm'])
-            output['saliency_map'] = _sigmoid(output['saliency_map'])
-            output['local_shape'] = _sigmoid(output['local_shape'])
+            output['saliency_map'] = output['saliency_map'].sigmoid()
+            output['local_shape'] = output['local_shape'].sigmoid()
 
 
             if opt.eval_oracle_hm:

@@ -38,6 +38,7 @@ class CTSegDataset(data.Dataset):
         img = cv2.imread(img_path)
 
         height, width = img.shape[0], img.shape[1]
+
         c = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
         if self.opt.keep_res:
             input_h = (height | self.opt.pad) + 1
@@ -118,23 +119,7 @@ class CTSegDataset(data.Dataset):
             instance_mask= cv2.warpAffine(instance_mask, trans_output,
                                  (output_w, output_h),
                                  flags=cv2.INTER_LINEAR)
-            """
-            print(f'======================k:{k}==========================')
-            print(img_path)
-            print('trans_output', trans_output)
-            print('w, h', output_h, output_w)
-            print('c, s', c, s)
-            print('instance_mask_ori', np.shape(instance_mask_ori))
-            import matplotlib.pyplot as plt
-            plt.imshow(instance_mask_ori)
-            plt.savefig(f'../tmp/mask_raw_{k}.png')
-            plt.imshow(instance_mask)
-            plt.savefig(f'../tmp/mask_affine_{k}.png')
-            instance_mask = instance_mask.astype(np.float32)
-            import sys
-            if(k > 5):
-                sys.exit(0)
-            """
+            
 
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
             if h > 0 and w > 0:
